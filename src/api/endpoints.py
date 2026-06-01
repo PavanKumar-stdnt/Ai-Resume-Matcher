@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.api.dependencies import verify_api_key

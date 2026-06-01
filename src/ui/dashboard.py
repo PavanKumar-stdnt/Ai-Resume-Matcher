@@ -111,15 +111,23 @@ section[data-testid="stSidebar"]{background:var(--surface)!important;border-righ
 """
 
 def _score_color(s: float) -> str:
-    if s >= 75: return "#00e5a0"
-    if s >= 55: return "#29b6ff"
-    if s >= 35: return "#fbbf24"
+    if s >= 75: 
+        return "#00e5a0"
+    if s >= 55: 
+        return "#29b6ff"
+    if s >= 35: 
+        return "#fbbf24"
+    
     return "#f87171"
 
 def _tier(s: float) -> tuple[str, str]:
-    if s >= 75: return "Elite Match", "tier-elite"
-    if s >= 55: return "Strong Match", "tier-strong"
-    if s >= 35: return "Fair Match", "tier-fair"
+    if s >= 75: 
+        return "Elite Match", "tier-elite"
+    if s >= 55: 
+        return "Strong Match", "tier-strong"
+    if s >= 35: 
+        return "Fair Match", "tier-fair"
+    
     return "Weak Match", "tier-weak"
 
 def _lb_badge(s: float) -> str:
@@ -200,7 +208,8 @@ def _render_batch_leaderboard(results: list[dict], job_snippet: str) -> None:
 
     st.markdown('<div class="sec-label">Individual Analyses</div>', unsafe_allow_html=True)
     for r in results:
-        if r.get("error"): continue
+        if r.get("error"): 
+            continue
         rank = r.get("rank","?")
         filename = r.get("resume_filename","resume")
         final = float(r.get("final_score",0))
@@ -319,11 +328,19 @@ def main() -> None:
 
         if run_btn:
             errors = []
-            if not resume_file: errors.append("Please upload a resume file.")
-            if not jd_text.strip() and not jd_file: errors.append("Please provide a job description.")
-            if not api_key.strip(): errors.append("Enter your API key in the sidebar.")
+            if not resume_file: 
+                errors.append("Please upload a resume file.")
+                
+            if not jd_text.strip() and not jd_file: 
+                errors.append("Please provide a job description.")
+                
+            if not api_key.strip(): 
+                errors.append("Enter your API key in the sidebar.")
+                
             if errors:
-                for e in errors: st.error(e)
+                for e in errors: 
+                    st.error(e)
+                    
             else:
                 with result_ph.container():
                     st.markdown('<div class="loading-msg"><div style="font-size:1.4rem;margin-bottom:6px;">⚙️</div>Running RAG pipeline…<br><small style="color:var(--text3)">Chunking → Indexing → Retrieving → Gemini</small></div>', unsafe_allow_html=True)
@@ -402,12 +419,21 @@ def main() -> None:
 
         if batch_run_btn:
             berrors = []
-            if not batch_files: berrors.append("Upload at least one resume.")
-            if len(batch_files or []) > 20: berrors.append("Maximum 20 resumes.")
-            if not batch_jd_text.strip() and not batch_jd_file: berrors.append("Provide a job description.")
-            if not api_key.strip(): berrors.append("Enter your API key in the sidebar.")
+            if not batch_files: 
+                berrors.append("Upload at least one resume.")
+                
+            if len(batch_files or []) > 20: 
+                berrors.append("Maximum 20 resumes.")
+                
+            if not batch_jd_text.strip() and not batch_jd_file: 
+                berrors.append("Provide a job description.")
+                
+            if not api_key.strip(): 
+                berrors.append("Enter your API key in the sidebar.")
+                
             if berrors:
-                for e in berrors: st.error(e)
+                for e in berrors: 
+                    st.error(e)
             else:
                 n = len(batch_files)
                 with batch_ph.container():
@@ -429,9 +455,13 @@ def main() -> None:
                             _render_batch_leaderboard(bdata.get("results",[]), bdata.get("job_description_snippet",""))
                             st.markdown(f'<div style="font-size:0.7rem;color:var(--text3);text-align:right;margin-top:6px;">⏱ {elapsed:.1f}s · {bdata.get("successful",0)} ok · {bdata.get("failed",0)} failed</div>', unsafe_allow_html=True)
                     else:
-                        with batch_ph.container(): st.error(f"API {resp.status_code}: {resp.json().get('detail', resp.text)}")
+                        with batch_ph.container(): 
+                            st.error(
+                                f"API {resp.status_code}: {resp.json().get('detail', resp.text)}"
+                                )
                 except Exception as exc:
-                    with batch_ph.container(): st.error(f"Error: {exc}")
+                    with batch_ph.container(): 
+                        st.error(f"Error: {exc}")
 
     with tab_history:
         if not api_key.strip():

@@ -16,6 +16,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
+from contextlib import contextmanager
 
 from src.core.logger import append_match_record
 from src.core.utils import CHUNK_OVERLAP, CHUNK_SIZE, extract_text_from_bytes
@@ -257,7 +258,7 @@ class MatchOrchestrator:
 
 
 # ── No-op context manager for when MLflow is disabled ────────────────────────
-from contextlib import contextmanager
+# from contextlib import contextmanager
 
 @contextmanager
 def _noop_context():
