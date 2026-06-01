@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  mlflow:
+    build:
+      context: ..
+      dockerfile: Dockerfile.mlflow
+    container_name: mlflow-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_runs:/mlruns
+    networks:
+      - mlflow-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  mlflow-net:
+    driver: bridge
+
+volumes:
+  mlflow_runs:

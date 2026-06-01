@@ -1,0 +1,49 @@
+# ── Secrets — NEVER commit ────────────────────────────────────────────────────
+.env
+*.pem
+*.key
+nginx/ssl/
+.streamlit/secrets.toml
+
+# ── Kubernetes — excluded from this project ───────────────────────────────────
+k8s/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# ── Runtime data ──────────────────────────────────────────────────────────────
+local_qdrant_storage/
+matching_history_database.csv
+mlruns/
+.cache/
+mlartifacts/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+rq_env
+mlruns/
+mlartifacts/
+local_qdrant_storage
+matching_history_database
+.streamlit/secrets.toml
+.env
+.env.example
+false/

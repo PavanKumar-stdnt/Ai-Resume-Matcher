@@ -1,0 +1,53 @@
+# ── Kubernetes (excluded from this project) ───────────────────────────────────
+k8s/
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+.env
+.env.example
+*.pem
+*.key
+
+# ── Git & CI ──────────────────────────────────────────────────────────────────
+.github/
+.git/
+.gitignore
+
+# ── Streamlit (frontend runs separately) ─────────────────────────────────────
+.streamlit/
+streamlit_app.py
+requirements-streamlit.txt
+
+# ── Docs & Scripts ────────────────────────────────────────────────────────────
+*.md
+ec2-setup.sh
+render.yaml
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ── Runtime data (not needed in image) ───────────────────────────────────────
+local_qdrant_storage/
+.env
+rq_env
+.env.example
+.streamlit/secrets.toml
+mlruns/
+mlartifacts/
+local_qdrant_storage
+matching_history_database.csv
+.cache/
+false/
+
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

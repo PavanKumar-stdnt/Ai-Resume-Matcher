@@ -1,0 +1,197 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .github/workflows/ci-cd.yml
+# GitHub Actions CI/CD Pipeline — No Kubernetes
+#
+# Triggers:
+#   push to main     → full CI + deploy to Render / EC2
+#   push to develop  → CI only (lint + test)
+#   pull_request     → CI only
+#
+# Jobs:
+#   lint    → ruff + black format check
+#   test    → pytest unit tests
+#   build   → Docker image build + push to GitHub Container Registry (GHCR)
+#   deploy  → SSH into EC2 and pull latest image
+#             OR trigger Render auto-deploy via webhook
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - 'k8s/**'
+      - '**.md'
+      - '.streamlit/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'k8s/**'
+      - '**.md'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/resume-matcher-api
+  PYTHON_VERSION: "3.11"
+
+jobs:
+
+  # ── Job 1: Lint ─────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install lint tools
+        run: pip install ruff black
+
+      - name: Run ruff linter
+        run: ruff check src/
+
+      - name: Run black format check
+        run: black --check src/
+
+  # ── Job 2: Test ─────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-prod.txt pytest pytest-asyncio httpx
+
+      - name: Run tests
+        env:
+          GOOGLE_API_KEY: test-key-ci-placeholder
+          API_SECRET_KEY: test-secret-ci-placeholder
+          QDRANT_URL: ""
+          QDRANT_API_KEY: ""
+          MLFLOW_ENABLED: "false"
+          MLFLOW_TRACKING_URI: "./mlruns"
+          MLFLOW_EXPERIMENT_NAME: "test"
+        run: |
+          if [ -d "tests/" ]; then
+            pytest tests/ -v --tb=short
+          else
+            echo "No tests directory yet — skipping"
+          fi
+
+  # ── Job 3: Build Docker Image ────────────────────────────────────────────────
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: runtime
+
+  # ── Job 4A: Deploy to Render ─────────────────────────────────────────────────
+  deploy-render:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_TARGET == 'render'
+    environment: production
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          echo "Render deploy triggered at $(date)"
+
+  # ── Job 4B: Deploy to EC2 ────────────────────────────────────────────────────
+  deploy-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_TARGET == 'ec2'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd /opt/ai-resume-matcher
+
+            # Login to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest images
+            docker compose pull api
+            docker compose pull mlflow
+
+            # Zero-downtime rolling restart
+            docker compose up -d --no-deps --remove-orphans api
+            docker compose up -d --no-deps mlflow
+
+            # Wait and verify health
+            sleep 20
+            curl -f http://localhost:8000/api/v1/health \
+              && echo "✅ Deploy OK — $(date)" \
+              || (echo "❌ Health check failed" && exit 1)
+
+            # Clean up old images
+            docker image prune -f
+
+      - name: Confirm deployment
+        if: success()
+        run: echo "✅ EC2 deployment succeeded — ${{ github.sha }}"
+
+      - name: Alert on failure
+        if: failure()
+        run: echo "❌ EC2 deployment FAILED — check logs for ${{ github.sha }}"

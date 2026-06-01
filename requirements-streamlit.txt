@@ -1,0 +1,6 @@
+# requirements-streamlit.txt
+# Used by Streamlit Cloud — only UI dependencies needed here.
+# The backend runs separately on Render / EC2.
+
+streamlit==1.41.1
+requests==2.32.3
