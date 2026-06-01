@@ -77,13 +77,15 @@ app.include_router(api_router, prefix="/api/v1", tags=["Resume Matching"])
 
 @app.get("/", include_in_schema=False)
 async def root() -> JSONResponse:
-    return JSONResponse(content={
-        "service": "AI Resume Matcher",
-        "version": "2.0.0",
-        "environment": settings.environment,
-        "docs": "/docs",
-        "health": "/api/v1/health",
-    })
+    return JSONResponse(
+        content={
+            "service": "AI Resume Matcher",
+            "version": "2.0.0",
+            "environment": settings.environment,
+            "docs": "/docs",
+            "health": "/api/v1/health",
+        }
+    )
 
 
 if __name__ == "__main__":

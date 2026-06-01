@@ -79,7 +79,8 @@ class LLMService:
 
         logger.debug(
             "Sending RAG prompt to Gemini — %d chunks, model='%s'.",
-            len(retrieved_chunks), self._model,
+            len(retrieved_chunks),
+            self._model,
         )
 
         try:

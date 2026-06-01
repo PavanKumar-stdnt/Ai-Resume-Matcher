@@ -27,15 +27,19 @@ logger = logging.getLogger(__name__)
 
 try:
     import mlflow
+
     MLFLOW_AVAILABLE = True
 except ImportError:
     mlflow = None
     MLFLOW_AVAILABLE = False
 
+
 class MLflowTracker:
     """Thin wrapper around MLflow for resume matching experiment tracking."""
 
-    def __init__(self, tracking_uri: str, experiment_name: str, enabled: bool = True) -> None:
+    def __init__(
+        self, tracking_uri: str, experiment_name: str, enabled: bool = True
+    ) -> None:
         self._enabled = enabled and MLFLOW_AVAILABLE
         self._experiment_name = experiment_name
 
@@ -44,13 +48,16 @@ class MLflowTracker:
             mlflow.set_experiment(experiment_name)
             logger.info(
                 "MLflow tracking enabled — uri='%s', experiment='%s'",
-                tracking_uri, experiment_name,
+                tracking_uri,
+                experiment_name,
             )
         else:
             logger.info("MLflow tracking disabled.")
 
     @contextmanager
-    def start_run(self, resume_filename: str, tags: dict[str, str] | None = None) -> Generator[str | None, None, None]:
+    def start_run(
+        self, resume_filename: str, tags: dict[str, str] | None = None
+    ) -> Generator[str | None, None, None]:
         """Context manager that wraps one pipeline run as an MLflow run.
 
         Yields the run_id string (or None if disabled).

@@ -115,7 +115,9 @@ def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
 
     logger.debug(
         "Extracted %d chars from '%s' (format=%s).",
-        len(cleaned), filename, lower_name.rsplit(".", 1)[-1],
+        len(cleaned),
+        filename,
+        lower_name.rsplit(".", 1)[-1],
     )
     return cleaned[:_MAX_CHARS]
 
@@ -163,12 +165,14 @@ def chunk_document(text: str, filename: str) -> list[TextChunk]:
             chunk_text = " ".join(current_sentences).strip()
             wc = len(chunk_text.split())
             if wc >= MIN_CHUNK_WORDS:
-                chunks.append(TextChunk(
-                    text=chunk_text,
-                    chunk_index=len(chunks),
-                    word_count=wc,
-                    source_filename=filename,
-                ))
+                chunks.append(
+                    TextChunk(
+                        text=chunk_text,
+                        chunk_index=len(chunks),
+                        word_count=wc,
+                        source_filename=filename,
+                    )
+                )
 
             # Step back by CHUNK_OVERLAP words — keep trailing sentences whose
             # cumulative word count approaches the overlap budget.
@@ -189,16 +193,21 @@ def chunk_document(text: str, filename: str) -> list[TextChunk]:
         chunk_text = " ".join(current_sentences).strip()
         wc = len(chunk_text.split())
         if wc >= MIN_CHUNK_WORDS:
-            chunks.append(TextChunk(
-                text=chunk_text,
-                chunk_index=len(chunks),
-                word_count=wc,
-                source_filename=filename,
-            ))
+            chunks.append(
+                TextChunk(
+                    text=chunk_text,
+                    chunk_index=len(chunks),
+                    word_count=wc,
+                    source_filename=filename,
+                )
+            )
 
     logger.debug(
         "Chunked '%s' → %d chunks (size=%d, overlap=%d).",
-        filename, len(chunks), CHUNK_SIZE, CHUNK_OVERLAP,
+        filename,
+        len(chunks),
+        CHUNK_SIZE,
+        CHUNK_OVERLAP,
     )
     return chunks
 
@@ -256,9 +265,7 @@ def _extract_txt(file_bytes: bytes) -> str:
             return text
         except (UnicodeDecodeError, LookupError):
             logger.debug("TXT decoding failed with '%s', trying next.", encoding)
-    raise ValueError(
-        f"Could not decode .txt with any of: {', '.join(_TXT_ENCODINGS)}."
-    )
+    raise ValueError(f"Could not decode .txt with any of: {', '.join(_TXT_ENCODINGS)}.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

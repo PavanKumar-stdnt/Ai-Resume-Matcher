@@ -37,13 +37,15 @@ def _get_orchestrator(settings: Settings = Depends(get_settings)) -> MatchOrches
         _vector_service = VectorService(
             collection_name=settings.qdrant_collection_name,
             embedding_model=settings.embedding_model,
-           # embedding_dimension=settings.embedding_dimension,
+            # embedding_dimension=settings.embedding_dimension,
             qdrant_url=settings.qdrant_url,
             qdrant_api_key=settings.qdrant_api_key,
             storage_path=settings.qdrant_storage_path,
         )
 
-        _llm_service = LLMService(api_key=settings.google_api_key, model=settings.gemini_model)
+        _llm_service = LLMService(
+            api_key=settings.google_api_key, model=settings.gemini_model
+        )
 
         _mlflow_tracker = MLflowTracker(
             tracking_uri=settings.mlflow_tracking_uri,
@@ -70,10 +72,16 @@ async def _resolve_job_text(
         return job_description_text.strip()
     if job_description_file and job_description_file.filename:
         try:
-            return extract_text_from_bytes(await job_description_file.read(), job_description_file.filename)
+            return extract_text_from_bytes(
+                await job_description_file.read(), job_description_file.filename
+            )
         except Exception as exc:
-            raise HTTPException(status_code=422, detail=f"Could not parse JD file: {exc}") from exc
-    raise HTTPException(status_code=422, detail="Job description required via text or file.")
+            raise HTTPException(
+                status_code=422, detail=f"Could not parse JD file: {exc}"
+            ) from exc
+    raise HTTPException(
+        status_code=422, detail="Job description required via text or file."
+    )
 
 
 @router.get("/health", summary="Liveness check")
@@ -81,7 +89,9 @@ async def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "AI Resume Matcher v2 — Production"}
 
 
-@router.post("/match", summary="Single resume RAG match", dependencies=[Depends(verify_api_key)])
+@router.post(
+    "/match", summary="Single resume RAG match", dependencies=[Depends(verify_api_key)]
+)
 async def match_resume(
     resume_file: Annotated[UploadFile, File()],
     job_description_text: Annotated[Optional[str], Form()] = None,
@@ -97,11 +107,15 @@ async def match_resume(
 
     job_text = await _resolve_job_text(job_description_text, job_description_file)
     if len(job_text) < 20:
-        raise HTTPException(status_code=422, detail="Job description too short (min 20 chars).")
+        raise HTTPException(
+            status_code=422, detail="Job description too short (min 20 chars)."
+        )
 
     try:
         result: dict[str, Any] = orchestrator.run(
-            resume_bytes=resume_bytes, resume_filename=resume_file.filename, job_text=job_text
+            resume_bytes=resume_bytes,
+            resume_filename=resume_file.filename,
+            job_text=job_text,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -114,7 +128,9 @@ async def match_resume(
     return JSONResponse(content=result)
 
 
-@router.post("/match/batch", summary="Batch RAG match", dependencies=[Depends(verify_api_key)])
+@router.post(
+    "/match/batch", summary="Batch RAG match", dependencies=[Depends(verify_api_key)]
+)
 async def match_resumes_batch(
     resume_files: Annotated[List[UploadFile], File()],
     job_description_text: Annotated[Optional[str], Form()] = None,
@@ -154,29 +170,31 @@ async def match_resumes_batch(
     successful = [r for r in results if r.get("rank") is not None]
     failed = [r for r in results if r.get("rank") is None]
 
-    return JSONResponse(content={
-        "total": len(results), "successful": len(successful), "failed": len(failed),
-        "job_description_snippet": job_text[:200], "results": results,
-    })
+    return JSONResponse(
+        content={
+            "total": len(results),
+            "successful": len(successful),
+            "failed": len(failed),
+            "job_description_snippet": job_text[:200],
+            "results": results,
+        }
+    )
 
 
 @router.get("/history", summary="Match history", dependencies=[Depends(verify_api_key)])
-async def get_history(limit: int = 50, settings: Settings = Depends(get_settings)) -> JSONResponse:
+async def get_history(
+    limit: int = 50, settings: Settings = Depends(get_settings)
+) -> JSONResponse:
     if not (1 <= limit <= 500):
         raise HTTPException(status_code=422, detail="limit must be 1–500.")
     rows = read_history(csv_path=settings.history_csv_path, limit=limit)
     return JSONResponse(content={"count": len(rows), "records": rows})
 
 
-
 @router.delete(
-    "/history",
-    summary="Clear match history",
-    dependencies=[Depends(verify_api_key)]
+    "/history", summary="Clear match history", dependencies=[Depends(verify_api_key)]
 )
-async def clear_history(
-    settings: Settings = Depends(get_settings)
-) -> JSONResponse:
+async def clear_history(settings: Settings = Depends(get_settings)) -> JSONResponse:
 
     try:
 
@@ -185,17 +203,10 @@ async def clear_history(
         if os.path.exists(settings.history_csv_path):
             os.remove(settings.history_csv_path)
 
-        return JSONResponse(
-            content={
-                "message": "History cleared successfully."
-            }
-        )
+        return JSONResponse(content={"message": "History cleared successfully."})
 
     except Exception as exc:
 
         logger.exception("Failed to clear history.")
 
-        raise HTTPException(
-            status_code=500,
-            detail="Could not clear history."
-        ) from exc
+        raise HTTPException(status_code=500, detail="Could not clear history.") from exc

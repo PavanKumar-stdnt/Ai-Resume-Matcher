@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     # ── Server ────────────────────────────────────────────────────────────────
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=8000, ge=1, le=65535)
-    environment: str = Field(default="production", description="development | production")
+    environment: str = Field(
+        default="production", description="development | production"
+    )
     allowed_origins: str = Field(
         default="*",
         description="Comma-separated CORS origins. Use '*' only in development.",
@@ -79,7 +81,10 @@ class Settings(BaseSettings):
     @field_validator("google_api_key", "api_secret_key", mode="before")
     @classmethod
     def _must_not_be_placeholder(cls, value: str, info) -> str:
-        placeholders = {"your_google_genai_api_key_here", "your_strong_random_secret_here"}
+        placeholders = {
+            "your_google_genai_api_key_here",
+            "your_strong_random_secret_here",
+        }
         stripped = str(value).strip()
         if not stripped:
             raise ValueError(f"{info.field_name} must not be empty.")

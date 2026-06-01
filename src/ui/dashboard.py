@@ -25,6 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 # ── Read secrets from Streamlit Cloud secret manager or env vars ──────────────
 def _get_secret(key: str, default: str = "") -> str:
     """Read from st.secrets first (Streamlit Cloud), then env var, then default."""
@@ -32,6 +33,7 @@ def _get_secret(key: str, default: str = "") -> str:
         return st.secrets[key]
     except (KeyError, FileNotFoundError):
         return os.getenv(key, default)
+
 
 _DEFAULT_API_URL = _get_secret("API_BASE_URL", "http://localhost:8000")
 _DEFAULT_API_KEY = _get_secret("API_SECRET_KEY", "")
@@ -110,44 +112,54 @@ section[data-testid="stSidebar"]{background:var(--surface)!important;border-righ
 </style>
 """
 
+
 def _score_color(s: float) -> str:
-    if s >= 75: 
+    if s >= 75:
         return "#00e5a0"
-    if s >= 55: 
+    if s >= 55:
         return "#29b6ff"
-    if s >= 35: 
+    if s >= 35:
         return "#fbbf24"
-    
+
     return "#f87171"
 
+
 def _tier(s: float) -> tuple[str, str]:
-    if s >= 75: 
+    if s >= 75:
         return "Elite Match", "tier-elite"
-    if s >= 55: 
+    if s >= 55:
         return "Strong Match", "tier-strong"
-    if s >= 35: 
+    if s >= 35:
         return "Fair Match", "tier-fair"
-    
+
     return "Weak Match", "tier-weak"
+
 
 def _lb_badge(s: float) -> str:
     _, css = _tier(s)
     label, _ = _tier(s)
     return f'<span class="lb-badge {css}">{label}</span>'
 
+
 def _bar(label: str, value: float, c1: str, c2: str) -> str:
     pct = min(100.0, max(0.0, value))
-    return (f'<div class="bar-row"><span class="bar-lbl">{label}</span>'
-            f'<div class="bar-track"><div class="bar-fill" style="width:{pct:.1f}%;--fs:{c1};--fe:{c2};"></div></div>'
-            f'<span class="bar-val">{pct:.1f}</span></div>')
+    return (
+        f'<div class="bar-row"><span class="bar-lbl">{label}</span>'
+        f'<div class="bar-track"><div class="bar-fill" style="width:{pct:.1f}%;--fs:{c1};--fe:{c2};"></div></div>'
+        f'<span class="bar-val">{pct:.1f}</span></div>'
+    )
+
 
 def _score_ring_html(score: float) -> str:
     color = _score_color(score)
     deg = score / 100 * 360
     tier_label, tier_css = _tier(score)
-    return (f'<div class="score-ring-wrap"><div class="score-ring" style="--ring-color:{color};--ring-deg:{deg:.1f}deg;">'
-            f'<div class="score-inner"><span class="score-num">{score:.0f}</span><span class="score-denom">/ 100</span></div></div>'
-            f'<div><span class="score-tier {tier_css}">{tier_label}</span></div></div>')
+    return (
+        f'<div class="score-ring-wrap"><div class="score-ring" style="--ring-color:{color};--ring-deg:{deg:.1f}deg;">'
+        f'<div class="score-inner"><span class="score-num">{score:.0f}</span><span class="score-denom">/ 100</span></div></div>'
+        f'<div><span class="score-tier {tier_css}">{tier_label}</span></div></div>'
+    )
+
 
 def _render_single_result(result: dict) -> None:
     final = float(result.get("final_score", 0))
@@ -160,27 +172,48 @@ def _render_single_result(result: dict) -> None:
     n_ret = result.get("chunks_retrieved", 0)
 
     st.markdown('<div class="sec-label">Match Results</div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="font-size:0.77rem;color:var(--text2);margin-bottom:1.25rem;">File: <span style="font-family:var(--mono);color:var(--text)">{filename}</span> &nbsp;·&nbsp; <span style="color:var(--text3)">{n_idx} chunks indexed · {n_ret} retrieved</span></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="font-size:0.77rem;color:var(--text2);margin-bottom:1.25rem;">File: <span style="font-family:var(--mono);color:var(--text)">{filename}</span> &nbsp;·&nbsp; <span style="color:var(--text3)">{n_idx} chunks indexed · {n_ret} retrieved</span></div>',
+        unsafe_allow_html=True,
+    )
 
     col_badge, col_bars = st.columns([1, 2], gap="large")
     with col_badge:
         st.markdown(_score_ring_html(final), unsafe_allow_html=True)
     with col_bars:
-        st.markdown('<div style="margin-top:1rem;"><div class="sec-label">Score Breakdown</div>', unsafe_allow_html=True)
-        st.markdown(_bar("Vector (RAG)", vector, "#29b6ff", "#818cf8"), unsafe_allow_html=True)
-        st.markdown(_bar("LLM Evaluation", llm, "#00e5a0", "#34d399"), unsafe_allow_html=True)
-        st.markdown(_bar("Final Score", final, "#00e5a0", "#29b6ff"), unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:0.7rem;color:var(--text3);font-family:var(--mono);margin-top:8px;">Final = {vector:.1f}×0.35 + {llm:.1f}×0.65 = <b style="color:var(--text)">{final:.1f}</b></div></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="margin-top:1rem;"><div class="sec-label">Score Breakdown</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            _bar("Vector (RAG)", vector, "#29b6ff", "#818cf8"), unsafe_allow_html=True
+        )
+        st.markdown(
+            _bar("LLM Evaluation", llm, "#00e5a0", "#34d399"), unsafe_allow_html=True
+        )
+        st.markdown(
+            _bar("Final Score", final, "#00e5a0", "#29b6ff"), unsafe_allow_html=True
+        )
+        st.markdown(
+            f'<div style="font-size:0.7rem;color:var(--text3);font-family:var(--mono);margin-top:8px;">Final = {vector:.1f}×0.35 + {llm:.1f}×0.65 = <b style="color:var(--text)">{final:.1f}</b></div></div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("📋 Full Recruiter Analysis", expanded=True):
-        st.markdown(f'<div class="analysis-box">{analysis}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="analysis-box">{analysis}</div>', unsafe_allow_html=True
+        )
     for w in warnings:
         st.markdown(f'<div class="warn-box">⚠️ {w}</div>', unsafe_allow_html=True)
 
+
 def _render_batch_leaderboard(results: list[dict], job_snippet: str) -> None:
     st.markdown('<div class="sec-label">Ranked Results</div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="font-size:0.77rem;color:var(--text2);margin-bottom:1rem;">JD: <span style="font-family:var(--mono);color:var(--text)">"{job_snippet[:100]}{"…" if len(job_snippet)>100 else ""}"</span></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="font-size:0.77rem;color:var(--text2);margin-bottom:1rem;">JD: <span style="font-family:var(--mono);color:var(--text)">"{job_snippet[:100]}{"…" if len(job_snippet)>100 else ""}"</span></div>',
+        unsafe_allow_html=True,
+    )
 
     successful = [r for r in results if r.get("rank") is not None]
     if successful:
@@ -192,46 +225,85 @@ def _render_batch_leaderboard(results: list[dict], job_snippet: str) -> None:
         c4.metric("Elite (≥75)", sum(1 for s in scores if s >= 75))
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div class="lb-header"><span>#</span><span>Resume</span><span style="text-align:right">Vec</span><span style="text-align:right">LLM</span><span style="text-align:right">Final</span><span style="text-align:center">Tier</span></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div class="lb-header"><span>#</span><span>Resume</span><span style="text-align:right">Vec</span><span style="text-align:right">LLM</span><span style="text-align:right">Final</span><span style="text-align:center">Tier</span></div>',
+        unsafe_allow_html=True,
+    )
 
     for r in results:
         rank = r.get("rank")
         filename = r.get("resume_filename", "—")
         if r.get("error"):
-            st.markdown(f'<div class="lb-row"><span class="lb-rank" style="color:var(--text3)">—</span><span class="lb-name" style="color:var(--text2)">{filename}</span><span style="color:#f87171;font-size:0.75rem;grid-column:3/7">{r["error"]}</span></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="lb-row"><span class="lb-rank" style="color:var(--text3)">—</span><span class="lb-name" style="color:var(--text2)">{filename}</span><span style="color:#f87171;font-size:0.75rem;grid-column:3/7">{r["error"]}</span></div>',
+                unsafe_allow_html=True,
+            )
             continue
         final = float(r.get("final_score", 0))
         color = _score_color(final)
         rank_css = f"r{rank}" if rank and rank <= 3 else ""
-        st.markdown(f'<div class="lb-row"><span class="lb-rank {rank_css}">{rank}</span><span class="lb-name">{filename}</span><span class="lb-score" style="color:var(--text2)">{float(r.get("vector_score",0)):.1f}</span><span class="lb-score" style="color:var(--text2)">{float(r.get("llm_score",0)):.1f}</span><span class="lb-score" style="color:{color}">{final:.1f}</span><span style="text-align:center">{_lb_badge(final)}</span></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="lb-row"><span class="lb-rank {rank_css}">{rank}</span><span class="lb-name">{filename}</span><span class="lb-score" style="color:var(--text2)">{float(r.get("vector_score",0)):.1f}</span><span class="lb-score" style="color:var(--text2)">{float(r.get("llm_score",0)):.1f}</span><span class="lb-score" style="color:{color}">{final:.1f}</span><span style="text-align:center">{_lb_badge(final)}</span></div>',
+            unsafe_allow_html=True,
+        )
     st.markdown("</div><br>", unsafe_allow_html=True)
 
-    st.markdown('<div class="sec-label">Individual Analyses</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sec-label">Individual Analyses</div>', unsafe_allow_html=True
+    )
     for r in results:
-        if r.get("error"): 
+        if r.get("error"):
             continue
-        rank = r.get("rank","?")
-        filename = r.get("resume_filename","resume")
-        final = float(r.get("final_score",0))
+        rank = r.get("rank", "?")
+        filename = r.get("resume_filename", "resume")
+        final = float(r.get("final_score", 0))
         tier_lbl, _ = _tier(final)
-        with st.expander(f"#{rank} — {filename}  ({final:.1f}/100 · {tier_lbl})", expanded=False):
-            col_l, col_r = st.columns([1,2], gap="large")
+        with st.expander(
+            f"#{rank} — {filename}  ({final:.1f}/100 · {tier_lbl})", expanded=False
+        ):
+            col_l, col_r = st.columns([1, 2], gap="large")
             with col_l:
                 st.markdown(_score_ring_html(final), unsafe_allow_html=True)
             with col_r:
-                st.markdown('<div class="sec-label">Score Breakdown</div>', unsafe_allow_html=True)
-                st.markdown(_bar("Vector (RAG)", float(r.get("vector_score",0)), "#29b6ff","#818cf8"), unsafe_allow_html=True)
-                st.markdown(_bar("LLM Evaluation", float(r.get("llm_score",0)), "#00e5a0","#34d399"), unsafe_allow_html=True)
-                st.markdown(_bar("Final Score", final, "#00e5a0","#29b6ff"), unsafe_allow_html=True)
-            analysis = r.get("analysis","")
+                st.markdown(
+                    '<div class="sec-label">Score Breakdown</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    _bar(
+                        "Vector (RAG)",
+                        float(r.get("vector_score", 0)),
+                        "#29b6ff",
+                        "#818cf8",
+                    ),
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    _bar(
+                        "LLM Evaluation",
+                        float(r.get("llm_score", 0)),
+                        "#00e5a0",
+                        "#34d399",
+                    ),
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    _bar("Final Score", final, "#00e5a0", "#29b6ff"),
+                    unsafe_allow_html=True,
+                )
+            analysis = r.get("analysis", "")
             if analysis:
-                st.markdown(f'<div class="analysis-box" style="margin-top:12px;">{analysis}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="analysis-box" style="margin-top:12px;">{analysis}</div>',
+                    unsafe_allow_html=True,
+                )
+
 
 def _render_history(api_url: str, api_key: str) -> None:
     st.markdown('<div class="sec-label">Recent Runs</div>', unsafe_allow_html=True)
-   #if st.button("🔄 Refresh", key="refresh_hist"):
-        #st.cache_data.clear()
-    col1, col2 = st.columns([1,1])
+    # if st.button("🔄 Refresh", key="refresh_hist"):
+    # st.cache_data.clear()
+    col1, col2 = st.columns([1, 1])
 
     with col1:
         if st.button("🔄 Refresh", key="refresh_hist"):
@@ -256,9 +328,14 @@ def _render_history(api_url: str, api_key: str) -> None:
 
             except Exception as exc:
                 st.error(f"Error: {exc}")
-    
+
     try:
-        resp = requests.get(f"{api_url.rstrip('/')}/api/v1/history", headers={"X-API-KEY": api_key}, params={"limit": 50}, timeout=10)
+        resp = requests.get(
+            f"{api_url.rstrip('/')}/api/v1/history",
+            headers={"X-API-KEY": api_key},
+            params={"limit": 50},
+            timeout=10,
+        )
         resp.raise_for_status()
         data = resp.json()
     except requests.exceptions.ConnectionError:
@@ -270,53 +347,110 @@ def _render_history(api_url: str, api_key: str) -> None:
 
     records = data.get("records", [])
     if not records:
-        st.markdown('<div class="loading-msg">No history yet.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="loading-msg">No history yet.</div>', unsafe_allow_html=True
+        )
         return
 
-    st.markdown('<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div class="hist-header"><span>Resume</span><span>Timestamp</span><span style="text-align:right">Vec</span><span style="text-align:right">LLM</span><span style="text-align:right">Final</span></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><div class="hist-header"><span>Resume</span><span>Timestamp</span><span style="text-align:right">Vec</span><span style="text-align:right">LLM</span><span style="text-align:right">Final</span></div>',
+        unsafe_allow_html=True,
+    )
     for row in records:
         final = float(row.get("final_score", 0))
         color = _score_color(final)
-        st.markdown(f'<div class="hist-row"><span class="hist-file">{row.get("resume_filename","—")}</span><span class="hist-ts">{row.get("timestamp_utc","—")}</span><span class="hist-score" style="color:var(--text2)">{float(row.get("vector_similarity_score",0)):.1f}</span><span class="hist-score" style="color:var(--text2)">{float(row.get("llm_analysis_score",0)):.1f}</span><span class="hist-score" style="color:{color}">{final:.1f}</span></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="hist-row"><span class="hist-file">{row.get("resume_filename","—")}</span><span class="hist-ts">{row.get("timestamp_utc","—")}</span><span class="hist-score" style="color:var(--text2)">{float(row.get("vector_similarity_score",0)):.1f}</span><span class="hist-score" style="color:var(--text2)">{float(row.get("llm_analysis_score",0)):.1f}</span><span class="hist-score" style="color:{color}">{final:.1f}</span></div>',
+            unsafe_allow_html=True,
+        )
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 def _jd_input_widget(key_prefix: str) -> tuple[str, Optional[Any]]:
     st.markdown('<div class="sec-label">Job Description</div>', unsafe_allow_html=True)
-    mode = st.radio("JD mode", ["Paste text","Upload file"], horizontal=True, label_visibility="collapsed", key=f"{key_prefix}_jd_mode")
+    mode = st.radio(
+        "JD mode",
+        ["Paste text", "Upload file"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key=f"{key_prefix}_jd_mode",
+    )
     jd_text, jd_file = "", None
     if mode == "Paste text":
-        jd_text = st.text_area("Paste JD", height=220, placeholder="Paste the full job description here…", label_visibility="collapsed", key=f"{key_prefix}_jd_text")
+        jd_text = st.text_area(
+            "Paste JD",
+            height=220,
+            placeholder="Paste the full job description here…",
+            label_visibility="collapsed",
+            key=f"{key_prefix}_jd_text",
+        )
     else:
-        jd_file = st.file_uploader("Upload JD", type=["pdf","docx","txt"], label_visibility="collapsed", key=f"{key_prefix}_jd_file")
+        jd_file = st.file_uploader(
+            "Upload JD",
+            type=["pdf", "docx", "txt"],
+            label_visibility="collapsed",
+            key=f"{key_prefix}_jd_file",
+        )
         if jd_file:
-            st.markdown(f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {jd_file.name}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {jd_file.name}</div>',
+                unsafe_allow_html=True,
+            )
     return jd_text, jd_file
+
 
 def main() -> None:
     st.markdown(_CSS, unsafe_allow_html=True)
-    st.markdown('<div class="rm-hero"><h1>AI Resume Matcher <em style="color:var(--g);font-style:normal;font-size:0.6em;vertical-align:middle;">v2</em></h1><p class="sub">True RAG pipeline — chunks indexed, retrieved, then evaluated by Gemini. Batch-match up to 20 resumes.</p><div class="rm-badge-row"><span class="rm-badge rm-new">✦ True RAG</span><span class="rm-badge rm-new">✦ Batch Matching</span><span class="rm-badge rm-new">✦ MLflow Tracked</span><span class="rm-badge">Qdrant Cloud</span><span class="rm-badge">Gemini 2.5 Flash</span></div></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="rm-hero"><h1>AI Resume Matcher <em style="color:var(--g);font-style:normal;font-size:0.6em;vertical-align:middle;">v2</em></h1><p class="sub">True RAG pipeline — chunks indexed, retrieved, then evaluated by Gemini. Batch-match up to 20 resumes.</p><div class="rm-badge-row"><span class="rm-badge rm-new">✦ True RAG</span><span class="rm-badge rm-new">✦ Batch Matching</span><span class="rm-badge rm-new">✦ MLflow Tracked</span><span class="rm-badge">Qdrant Cloud</span><span class="rm-badge">Gemini 2.5 Flash</span></div></div>',
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
-        st.markdown('<div class="sec-label" style="padding:1rem 0 0.5rem;">Connection</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="sec-label" style="padding:1rem 0 0.5rem;">Connection</div>',
+            unsafe_allow_html=True,
+        )
         api_url = "http://127.0.0.1:8000"
-        st.text_input("API Base URL", value=api_url, key="api_url_display", disabled=True)
-        api_key = st.text_input("X-API-KEY", value=_DEFAULT_API_KEY, type="password", key="api_key_input")
+        st.text_input(
+            "API Base URL", value=api_url, key="api_url_display", disabled=True
+        )
+        api_key = st.text_input(
+            "X-API-KEY", value=_DEFAULT_API_KEY, type="password", key="api_key_input"
+        )
         st.markdown("---")
-        st.markdown('<div style="font-size:0.7rem;color:var(--text2);line-height:1.9;"><b style="color:var(--text)">Deployed on:</b><br>Streamlit Cloud<br><br><b style="color:var(--text)">Backend:</b><br>Render / AWS EC2<br><br><b style="color:var(--text)">Vector DB:</b><br>Qdrant Cloud<br><br><b style="color:var(--text)">Tracking:</b><br>MLflow</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="font-size:0.7rem;color:var(--text2);line-height:1.9;"><b style="color:var(--text)">Deployed on:</b><br>Streamlit Cloud<br><br><b style="color:var(--text)">Backend:</b><br>Render / AWS EC2<br><br><b style="color:var(--text)">Vector DB:</b><br>Qdrant Cloud<br><br><b style="color:var(--text)">Tracking:</b><br>MLflow</div>',
+            unsafe_allow_html=True,
+        )
 
-    tab_single, tab_batch, tab_history = st.tabs(["🎯  Single Match","📦  Batch Match","📊  History"])
+    tab_single, tab_batch, tab_history = st.tabs(
+        ["🎯  Single Match", "📦  Batch Match", "📊  History"]
+    )
 
     with tab_single:
-        col_in, col_out = st.columns([1,1], gap="large")
+        col_in, col_out = st.columns([1, 1], gap="large")
         with col_in:
-            st.markdown('<div class="sec-label">Resume Upload</div>', unsafe_allow_html=True)
-            resume_file = st.file_uploader("Upload resume", type=["pdf","docx","txt"], label_visibility="collapsed", key="single_resume")
+            st.markdown(
+                '<div class="sec-label">Resume Upload</div>', unsafe_allow_html=True
+            )
+            resume_file = st.file_uploader(
+                "Upload resume",
+                type=["pdf", "docx", "txt"],
+                label_visibility="collapsed",
+                key="single_resume",
+            )
             if resume_file:
-                st.markdown(f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {resume_file.name}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {resume_file.name}</div>',
+                    unsafe_allow_html=True,
+                )
             st.markdown("<br>", unsafe_allow_html=True)
             jd_text, jd_file = _jd_input_widget("single")
             st.markdown("<br>", unsafe_allow_html=True)
-            run_btn = st.button("⚡ Analyse Match", use_container_width=True, key="single_run")
+            run_btn = st.button(
+                "⚡ Analyse Match", use_container_width=True, key="single_run"
+            )
 
         with col_out:
             result_ph = st.empty()
@@ -324,32 +458,48 @@ def main() -> None:
                 with result_ph.container():
                     _render_single_result(st.session_state["single_result"])
             else:
-                result_ph.markdown('<div class="loading-msg" style="margin-top:3rem;"><div style="font-size:2rem;opacity:0.25;margin-bottom:0.5rem;">🎯</div>Upload a resume and job description,<br>then click <em>Analyse Match</em>.</div>', unsafe_allow_html=True)
+                result_ph.markdown(
+                    '<div class="loading-msg" style="margin-top:3rem;"><div style="font-size:2rem;opacity:0.25;margin-bottom:0.5rem;">🎯</div>Upload a resume and job description,<br>then click <em>Analyse Match</em>.</div>',
+                    unsafe_allow_html=True,
+                )
 
         if run_btn:
             errors = []
-            if not resume_file: 
+            if not resume_file:
                 errors.append("Please upload a resume file.")
-                
-            if not jd_text.strip() and not jd_file: 
+
+            if not jd_text.strip() and not jd_file:
                 errors.append("Please provide a job description.")
-                
-            if not api_key.strip(): 
+
+            if not api_key.strip():
                 errors.append("Enter your API key in the sidebar.")
-                
+
             if errors:
-                for e in errors: 
+                for e in errors:
                     st.error(e)
-                    
+
             else:
                 with result_ph.container():
-                    st.markdown('<div class="loading-msg"><div style="font-size:1.4rem;margin-bottom:6px;">⚙️</div>Running RAG pipeline…<br><small style="color:var(--text3)">Chunking → Indexing → Retrieving → Gemini</small></div>', unsafe_allow_html=True)
-                files = {"resume_file": (resume_file.name, resume_file.read(), resume_file.type or "application/octet-stream")}
+                    st.markdown(
+                        '<div class="loading-msg"><div style="font-size:1.4rem;margin-bottom:6px;">⚙️</div>Running RAG pipeline…<br><small style="color:var(--text3)">Chunking → Indexing → Retrieving → Gemini</small></div>',
+                        unsafe_allow_html=True,
+                    )
+                files = {
+                    "resume_file": (
+                        resume_file.name,
+                        resume_file.read(),
+                        resume_file.type or "application/octet-stream",
+                    )
+                }
                 data = {}
                 if jd_text.strip():
                     data["job_description_text"] = jd_text
                 elif jd_file:
-                    files["job_description_file"] = (jd_file.name, jd_file.read(), jd_file.type or "application/octet-stream")
+                    files["job_description_file"] = (
+                        jd_file.name,
+                        jd_file.read(),
+                        jd_file.type or "application/octet-stream",
+                    )
                 try:
                     t0 = time.time()
 
@@ -358,14 +508,14 @@ def main() -> None:
                         headers={"X-API-KEY": api_key},
                         files=files,
                         data=data,
-                        timeout=120
+                        timeout=120,
                     )
 
                     elapsed = time.time() - t0
 
-                    #st.write("STATUS:", resp.status_code)
-                    #st.write("RAW RESPONSE:")
-                    #st.code(resp.text[:2000])
+                    # st.write("STATUS:", resp.status_code)
+                    # st.write("RAW RESPONSE:")
+                    # st.code(resp.text[:2000])
 
                     if resp.status_code == 200:
 
@@ -387,80 +537,136 @@ def main() -> None:
                             error_detail = "Request failed."
 
                         st.error(error_detail)
-                    #else:
-                     #   st.error(f"API Error {resp.status_code}")
-                      #  st.code(resp.text)
+                    # else:
+                    #   st.error(f"API Error {resp.status_code}")
+                    #  st.code(resp.text)
 
                 except Exception as exc:
                     st.error(f"Error: {exc}")
     with tab_batch:
-        st.markdown('<div style="background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:8px;padding:12px 16px;margin-bottom:1.5rem;font-size:0.82rem;color:var(--text2);">✦ <b style="color:var(--g)">Batch Mode</b> — Upload up to 20 resumes. Set the job description <b>once</b>. Get a ranked leaderboard.</div>', unsafe_allow_html=True)
-        col_bin, col_bout = st.columns([1,1], gap="large")
+        st.markdown(
+            '<div style="background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:8px;padding:12px 16px;margin-bottom:1.5rem;font-size:0.82rem;color:var(--text2);">✦ <b style="color:var(--g)">Batch Mode</b> — Upload up to 20 resumes. Set the job description <b>once</b>. Get a ranked leaderboard.</div>',
+            unsafe_allow_html=True,
+        )
+        col_bin, col_bout = st.columns([1, 1], gap="large")
         with col_bin:
-            st.markdown('<div class="sec-label">Resume Files (up to 20)</div>', unsafe_allow_html=True)
-            batch_files = st.file_uploader("Upload resumes", type=["pdf","docx","txt"], accept_multiple_files=True, label_visibility="collapsed", key="batch_resumes")
+            st.markdown(
+                '<div class="sec-label">Resume Files (up to 20)</div>',
+                unsafe_allow_html=True,
+            )
+            batch_files = st.file_uploader(
+                "Upload resumes",
+                type=["pdf", "docx", "txt"],
+                accept_multiple_files=True,
+                label_visibility="collapsed",
+                key="batch_resumes",
+            )
             if batch_files:
-                st.markdown(f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {len(batch_files)} file(s)</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="font-size:0.75rem;color:var(--g);margin-top:3px;">✓ {len(batch_files)} file(s)</div>',
+                    unsafe_allow_html=True,
+                )
                 for f in batch_files:
-                    st.markdown(f'<div style="font-size:0.72rem;color:var(--text2);font-family:var(--mono);">  · {f.name}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div style="font-size:0.72rem;color:var(--text2);font-family:var(--mono);">  · {f.name}</div>',
+                        unsafe_allow_html=True,
+                    )
             st.markdown("<br>", unsafe_allow_html=True)
             batch_jd_text, batch_jd_file = _jd_input_widget("batch")
             st.markdown("<br>", unsafe_allow_html=True)
-            batch_run_btn = st.button("⚡ Match All Resumes", use_container_width=True, key="batch_run")
+            batch_run_btn = st.button(
+                "⚡ Match All Resumes", use_container_width=True, key="batch_run"
+            )
 
         with col_bout:
             batch_ph = st.empty()
             if "batch_result" in st.session_state:
                 bdata = st.session_state["batch_result"]
                 with batch_ph.container():
-                    _render_batch_leaderboard(bdata.get("results",[]), bdata.get("job_description_snippet",""))
+                    _render_batch_leaderboard(
+                        bdata.get("results", []),
+                        bdata.get("job_description_snippet", ""),
+                    )
             else:
-                batch_ph.markdown('<div class="loading-msg" style="margin-top:3rem;"><div style="font-size:2rem;opacity:0.25;margin-bottom:0.5rem;">📦</div>Upload multiple resumes and one job description,<br>then click <em>Match All Resumes</em>.</div>', unsafe_allow_html=True)
+                batch_ph.markdown(
+                    '<div class="loading-msg" style="margin-top:3rem;"><div style="font-size:2rem;opacity:0.25;margin-bottom:0.5rem;">📦</div>Upload multiple resumes and one job description,<br>then click <em>Match All Resumes</em>.</div>',
+                    unsafe_allow_html=True,
+                )
 
         if batch_run_btn:
             berrors = []
-            if not batch_files: 
+            if not batch_files:
                 berrors.append("Upload at least one resume.")
-                
-            if len(batch_files or []) > 20: 
+
+            if len(batch_files or []) > 20:
                 berrors.append("Maximum 20 resumes.")
-                
-            if not batch_jd_text.strip() and not batch_jd_file: 
+
+            if not batch_jd_text.strip() and not batch_jd_file:
                 berrors.append("Provide a job description.")
-                
-            if not api_key.strip(): 
+
+            if not api_key.strip():
                 berrors.append("Enter your API key in the sidebar.")
-                
+
             if berrors:
-                for e in berrors: 
+                for e in berrors:
                     st.error(e)
             else:
                 n = len(batch_files)
                 with batch_ph.container():
-                    st.markdown(f'<div class="loading-msg"><div style="font-size:1.4rem;margin-bottom:6px;">⚙️</div>Processing {n} resume{"s" if n!=1 else ""}…<br><small style="color:var(--text3)">~{n*15}–{n*25}s estimated</small></div>', unsafe_allow_html=True)
-                mfiles = [("resume_files",(f.name,f.read(),f.type or "application/octet-stream")) for f in batch_files]
+                    st.markdown(
+                        f'<div class="loading-msg"><div style="font-size:1.4rem;margin-bottom:6px;">⚙️</div>Processing {n} resume{"s" if n!=1 else ""}…<br><small style="color:var(--text3)">~{n*15}–{n*25}s estimated</small></div>',
+                        unsafe_allow_html=True,
+                    )
+                mfiles = [
+                    (
+                        "resume_files",
+                        (f.name, f.read(), f.type or "application/octet-stream"),
+                    )
+                    for f in batch_files
+                ]
                 bdata_form = {}
                 if batch_jd_text.strip():
                     bdata_form["job_description_text"] = batch_jd_text
                 elif batch_jd_file:
-                    mfiles.append(("job_description_file",(batch_jd_file.name,batch_jd_file.read(),batch_jd_file.type or "application/octet-stream")))
+                    mfiles.append(
+                        (
+                            "job_description_file",
+                            (
+                                batch_jd_file.name,
+                                batch_jd_file.read(),
+                                batch_jd_file.type or "application/octet-stream",
+                            ),
+                        )
+                    )
                 try:
                     t0 = time.time()
-                    resp = requests.post(f"{api_url.rstrip('/')}/api/v1/match/batch", headers={"X-API-KEY": api_key}, files=mfiles, data=bdata_form, timeout=300)
+                    resp = requests.post(
+                        f"{api_url.rstrip('/')}/api/v1/match/batch",
+                        headers={"X-API-KEY": api_key},
+                        files=mfiles,
+                        data=bdata_form,
+                        timeout=300,
+                    )
                     elapsed = time.time() - t0
                     if resp.status_code == 200:
                         bdata = resp.json()
                         st.session_state["batch_result"] = bdata
                         with batch_ph.container():
-                            _render_batch_leaderboard(bdata.get("results",[]), bdata.get("job_description_snippet",""))
-                            st.markdown(f'<div style="font-size:0.7rem;color:var(--text3);text-align:right;margin-top:6px;">⏱ {elapsed:.1f}s · {bdata.get("successful",0)} ok · {bdata.get("failed",0)} failed</div>', unsafe_allow_html=True)
+                            _render_batch_leaderboard(
+                                bdata.get("results", []),
+                                bdata.get("job_description_snippet", ""),
+                            )
+                            st.markdown(
+                                f'<div style="font-size:0.7rem;color:var(--text3);text-align:right;margin-top:6px;">⏱ {elapsed:.1f}s · {bdata.get("successful",0)} ok · {bdata.get("failed",0)} failed</div>',
+                                unsafe_allow_html=True,
+                            )
                     else:
-                        with batch_ph.container(): 
+                        with batch_ph.container():
                             st.error(
                                 f"API {resp.status_code}: {resp.json().get('detail', resp.text)}"
-                                )
+                            )
                 except Exception as exc:
-                    with batch_ph.container(): 
+                    with batch_ph.container():
                         st.error(f"Error: {exc}")
 
     with tab_history:
@@ -468,6 +674,7 @@ def main() -> None:
             st.warning("Enter your API key in the sidebar to load history.")
         else:
             _render_history(api_url=api_url, api_key=api_key)
+
 
 if __name__ == "__main__":
     main()
