@@ -35,7 +35,11 @@ def _get_secret(key: str, default: str = "") -> str:
         return os.getenv(key, default)
 
 
-_DEFAULT_API_URL = _get_secret("API_BASE_URL", "http://localhost:8000")
+#_DEFAULT_API_URL = _get_secret("API_BASE_URL", "http://localhost:8000")
+_DEFAULT_API_URL = os.getenv(
+    "BACKEND_URL",
+    "http://localhost:8000"
+)
 _DEFAULT_API_KEY = _get_secret("API_SECRET_KEY", "")
 
 # ── CSS (identical to v2) ─────────────────────────────────────────────────────
@@ -411,7 +415,7 @@ def main() -> None:
             '<div class="sec-label" style="padding:1rem 0 0.5rem;">Connection</div>',
             unsafe_allow_html=True,
         )
-        api_url = "http://127.0.0.1:8000"
+        api_url = _DEFAULT_API_URL
         st.text_input(
             "API Base URL", value=api_url, key="api_url_display", disabled=True
         )

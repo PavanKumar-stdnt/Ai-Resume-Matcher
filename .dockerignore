@@ -13,8 +13,7 @@ k8s/
 .gitignore
 
 # ── Streamlit (frontend runs separately) ─────────────────────────────────────
-.streamlit/
-streamlit_app.py
+
 requirements-streamlit.txt
 
 # ── Docs & Scripts ────────────────────────────────────────────────────────────
@@ -39,7 +38,7 @@ local_qdrant_storage/
 .env
 rq_env
 .env.example
-.streamlit/secrets.toml
+
 mlruns/
 mlartifacts/
 local_qdrant_storage
