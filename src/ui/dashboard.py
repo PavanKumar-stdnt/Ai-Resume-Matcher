@@ -35,11 +35,8 @@ def _get_secret(key: str, default: str = "") -> str:
         return os.getenv(key, default)
 
 
-#_DEFAULT_API_URL = _get_secret("API_BASE_URL", "http://localhost:8000")
-_DEFAULT_API_URL = os.getenv(
-    "BACKEND_URL",
-    "http://localhost:8000"
-)
+# _DEFAULT_API_URL = _get_secret("API_BASE_URL", "http://localhost:8000")
+_DEFAULT_API_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 _DEFAULT_API_KEY = _get_secret("API_SECRET_KEY", "")
 
 # ── CSS (identical to v2) ─────────────────────────────────────────────────────
