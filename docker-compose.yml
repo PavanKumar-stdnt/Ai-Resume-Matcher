@@ -1,105 +1,31 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# docker-compose.yml — Full local + production stack
-#
-# Services:
-#   api      — FastAPI backend (connects to Qdrant Cloud or local)
-#   mlflow   — MLflow tracking server
-#   nginx    — Reverse proxy + SSL termination
-#
-# Usage:
-#   docker compose up --build           # Start all services
-#   docker compose up api mlflow        # Skip nginx for local dev
-#   docker compose down -v              # Stop and remove volumes
-# ─────────────────────────────────────────────────────────────────────────────
-
-version: "3.9"
-
 services:
-
-  # ── FastAPI Backend ─────────────────────────────────────────────────────────
-  api:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runtime
-    container_name: resume-matcher-api
-    restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "8000:8000"
-    environment:
-      # ── Required — override with real values or use .env file ──
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      API_SECRET_KEY: ${API_SECRET_KEY}
-      # ── Qdrant Cloud ──
-      QDRANT_URL: ${QDRANT_URL}
-      QDRANT_API_KEY: ${QDRANT_API_KEY}
-      QDRANT_COLLECTION_NAME: ${QDRANT_COLLECTION_NAME:-resumes}
-      # ── MLflow ──
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-      MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-ai-resume-matcher}
-      MLFLOW_ENABLED: ${MLFLOW_ENABLED:-true}
-      # ── App ──
-      ENVIRONMENT: ${ENVIRONMENT:-production}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
-      HISTORY_CSV_PATH: /app/data/matching_history_database.csv
-    volumes:
-      - api_data:/app/data
-      - fastembed_cache:/app/.cache
     depends_on:
-      mlflow:
-        condition: service_healthy
-    networks:
-      - resume-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 90s
+      - mlflow
 
-  # ── MLflow Tracking Server ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+
   mlflow:
     build:
       context: .
       dockerfile: Dockerfile.mlflow
-    container_name: resume-matcher-mlflow
-    restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "5000:5000"
-    volumes:
-      - mlflow_data:/mlruns
-    networks:
-      - resume-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # ── Nginx Reverse Proxy ──────────────────────────────────────────────────────
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: resume-matcher-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
-    networks:
-      - resume-net
-
-networks:
-  resume-net:
-    driver: bridge
-
-volumes:
-  api_data:
-  mlflow_data:
-  fastembed_cache:
